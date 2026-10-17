@@ -1,0 +1,284 @@
+fileFormatVersion: 2
+guid: 9aa0f2224e0e4064388a386e39f4603e
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -6832676468738972994
+    second: sprite fantasmal_0
+  - first:
+      213: 6396577142230503153
+    second: sprite fantasmal_1
+  - first:
+      213: -5686437744808705013
+    second: sprite fantasmal_2
+  - first:
+      213: -8316260514397335972
+    second: sprite fantasmal_3
+  - first:
+      213: 2243912247274616383
+    second: sprite fantasmal_4
+  - first:
+      213: -5403281300291163031
+    second: sprite fantasmal_5
+  - first:
+      213: 589052085738874570
+    second: sprite fantasmal_6
+  - first:
+      213: -2673371209917672482
+    second: sprite fantasmal_7
+  - first:
+      213: 2612882091242131122
+    second: sprite fantasmal_8
+  - first:
+      213: -7315527016492623458
+    second: sprite fantasmal_9
+  - first:
+      213: 3889914817568321189
+    second: sprite fantasmal_10
+  - first:
+      213: 6781070176082424949
+    second: sprite fantasmal_11
+  - first:
+      213: 600494693761333672
+    second: sprite fantasmal_12
+  - first:
+      213: 2605755595966381396
+    second: sprite fantasmal_13
+  - first:
+      213: 2106778384823506172
+    second: sprite fantasmal_14
+  - first:
+      213: 4078440560409801789
+    second: sprite fantasmal_15
+  - first:
+      213: 6744295227230052364
+    second: sprite fantasmal_16
+  - first:
+      213: -1884519047369752157
+    second: sprite fantasmal_17
+  - first:
+      213: 4452419744274332064
+    second: sprite fantasmal_18
+  - first:
+      213: 8710825307285084677
+    second: sprite fantasmal_19
+  - first:
+      213: -6125294318659075084
+    second: sprite fantasmal_20
+  - first:
+      213: -6978238177806122149
+    second: sprite fantasmal_21
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 512
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: sprite fantasmal_0
+      rect:
+        serializedVersion: 2
+        x: 17
+        y: 22
+        width: 339
+        height: 356
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: eb2a4a7e3f47d21a0800000000000000
+      internalID: -6832676468738972994
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sprite fantasmal_2
+      rect:
+        serializedVersion: 2
+        x: 825
+        y: 22
+        width: 360
+        height: 357
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b04cd47cff6b511b0800000000000000
+      internalID: -5686437744808705013
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: sprite fantasmal_6
+      rect:
+        serializedVersion: 2
+        x: 423
+        y: 23
+        width: 359
+        height: 358
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ac62ba440cbbc2800800000000000000
+      internalID: 589052085738874570
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 9fddcd4cbda0d314da25e102e4c5eba4
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      sprite fantasmal_0: -6832676468738972994
+      sprite fantasmal_1: 6396577142230503153
+      sprite fantasmal_10: 3889914817568321189
+      sprite fantasmal_11: 6781070176082424949
+      sprite fantasmal_12: 600494693761333672
+      sprite fantasmal_13: 2605755595966381396
+      sprite fantasmal_14: 2106778384823506172
+      sprite fantasmal_15: 4078440560409801789
+      sprite fantasmal_16: 6744295227230052364
+      sprite fantasmal_17: -1884519047369752157
+      sprite fantasmal_18: 4452419744274332064
+      sprite fantasmal_19: 8710825307285084677
+      sprite fantasmal_2: -5686437744808705013
+      sprite fantasmal_20: -6125294318659075084
+      sprite fantasmal_21: -6978238177806122149
+      sprite fantasmal_3: -8316260514397335972
+      sprite fantasmal_4: 2243912247274616383
+      sprite fantasmal_5: -5403281300291163031
+      sprite fantasmal_6: 589052085738874570
+      sprite fantasmal_7: -2673371209917672482
+      sprite fantasmal_8: 2612882091242131122
+      sprite fantasmal_9: -7315527016492623458
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
