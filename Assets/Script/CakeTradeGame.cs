@@ -3,15 +3,26 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using UnityEngine.Serialization;
 using TMPro;
 using Random = UnityEngine.Random;
 
+/// <summary>
+/// "Aprender a decir que no" — trading de pasteles en 3 turnos.
+/// La mascota es la voz que te incentiva a pujar: sus diálogos aparecen en el globo
+/// y su sprite cambia según el ánimo de cada mensaje.
+/// </summary>
 public class CakeTradeGame : MonoBehaviour
 {
+    public enum PetMood { Neutral, Happy, Sad }
+
     [Serializable]
     public class Turn
     {
+        [Tooltip("Lo que dice la mascota en este turno para animarte a pujar.")]
         [TextArea] public string hint;
+        [Tooltip("Ánimo de la mascota mientras dice el hint.")]
+        public PetMood hintMood = PetMood.Happy;
         [Tooltip("Tendencia mientras decides (puntos por tick). Positivo = se ve prometedor.")]
         public float idleDrift = 0.06f;
         public float idleVolatility = 1f;
@@ -39,8 +50,12 @@ public class CakeTradeGame : MonoBehaviour
     [Tooltip("Botones 'Jugar de nuevo' de los paneles finales.")]
     public Button[] panelRestartButtons;
     public Image cakeImage;
+    public Image petImage;
+    [Tooltip("Globo de diálogo de la mascota (para la animación).")]
+    public RectTransform dialogBubble;
     public TMP_Text creditsText;
     public TMP_Text turnText;
+    [Tooltip("Texto dentro del globo: el diálogo de la mascota.")]
     public TMP_Text messageText;
 
     [Header("Paneles finales")]
@@ -57,6 +72,16 @@ public class CakeTradeGame : MonoBehaviour
     public Sprite cake2Sprite;       // pujaste a la alza
     public Sprite cakeMinus1Sprite;  // pujaste a la baja
 
+    [Header("Sprites de la mascota")]
+    public Sprite pet1Sprite;        // neutral
+    public Sprite pet2Sprite;        // feliz / emocionada
+    [FormerlySerializedAs("petinus1Sprite")]
+    public Sprite petMinus1Sprite;   // triste / preocupada
+
+    [Header("Animación de la mascota")]
+    public float popDuration = 0.25f;
+    public float popScale = 0.12f;
+
     [Header("Reglas")]
     public float startCredits = 100f;
     [Tooltip("Créditos ganados/perdidos por cada punto que se mueve el precio.")]
@@ -72,21 +97,24 @@ public class CakeTradeGame : MonoBehaviour
     {
         // TURNO 1: prometedor. Sube con bajones pequeños; la puja siempre gana.
         new Turn {
-            hint = "El mercado se ve prometedor... ¿pujas?",
+            hint = "¡Mira cómo sube! Es tu gran oportunidad... ¡puja ya!",
+            hintMood = PetMood.Happy,
             idleDrift = 0.06f, idleVolatility = 0.6f,
             idleSpikeDirection = 0.6f, idleSpikeScale = 0.5f, idleRandomDrift = 0.15f,
             outcome = new Vector2(25f, 45f), resolveVolatility = 0.7f, resolveSpikeDirection = 1f
         },
-        // TURNO 2: arriesgado. Movimientos bruscos en ambos sentidos; se puede ganar, pero es más fácil perder.
+        // TURNO 2: arriesgado. Movimientos bruscos; se puede ganar, pero es más fácil perder.
         new Turn {
-            hint = "El mercado está agitado: puede subir o caer. ¿Te arriesgas o dices que NO?",
+            hint = "Está un poco movido... ¡pero podrías ganar el doble! ¿Otra más?",
+            hintMood = PetMood.Neutral,
             idleDrift = 0.01f, idleVolatility = 1.6f,
             idleSpikeDirection = 0f, idleSpikeScale = 1.3f, idleRandomDrift = 0.8f,
             outcome = new Vector2(-160f, 90f), resolveVolatility = 1.7f, resolveSpikeDirection = 0f
         },
         // TURNO 3: catastrófico. Todo se desploma; si pujas cruzas el límite y no puedes salir.
         new Turn {
-            hint = "El mercado se está desplomando... ¿de verdad vas a pujar?",
+            hint = "Se está cayendo... ¡pero seguro rebota! Una más y lo recuperas todo.",
+            hintMood = PetMood.Happy,
             idleDrift = -0.06f, idleVolatility = 1.8f,
             idleSpikeDirection = -0.8f, idleSpikeScale = 1.6f, idleRandomDrift = 0.5f,
             outcome = new Vector2(-450f, -350f), resolveVolatility = 2f, resolveSpikeDirection = -1f,
@@ -96,7 +124,7 @@ public class CakeTradeGame : MonoBehaviour
 
     Phase phase;
     int turn;
-    float credits, entry, resolveTimer;
+    float credits, entry, resolveTimer, popTimer;
 
     void Start()
     {
@@ -110,7 +138,7 @@ public class CakeTradeGame : MonoBehaviour
         HidePanels();
         chart.SetLimit(null);
         SetCake(cake1Sprite);
-        EnterDeciding(turns[0].hint);
+        EnterDeciding(turns[0].hint, turns[0].hintMood);
     }
 
     void Update()
@@ -122,9 +150,12 @@ public class CakeTradeGame : MonoBehaviour
             else if (resolveTimer >= resolveSeconds) FinishBid();
         }
         UpdateUI();
+        AnimatePop();
     }
 
     float OpenPnL() => (chart.CurrentPrice - entry) * moneyPerPoint;
+
+    // Acciones
 
     public void Bid()
     {
@@ -144,7 +175,8 @@ public class CakeTradeGame : MonoBehaviour
         phase = Phase.Resolving;
         resolveTimer = 0f;
         SetButtons(false);
-        Say(rising ? "Pujaste a la alza... la puja está en curso." : "Pujaste a la baja... la puja está en curso.");
+        if (rising) Say("¡Eso! ¡Va para arriba, vamos a ganar!", PetMood.Happy);
+        else Say("Mmm... va bajando, pero seguro rebota.", PetMood.Sad);
     }
 
     public void SayNo()
@@ -155,15 +187,17 @@ public class CakeTradeGame : MonoBehaviour
 
     public void Restart() => SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
 
-    void EnterDeciding(string message)
+    // Flujo
+
+    void EnterDeciding(string message, PetMood mood)
     {
         phase = Phase.Deciding;
         Turn t = turns[turn];
-        // La gráfica nunca se detiene
+        // La gráfica nunca se detiene: solo cambia su "personalidad" según el turno
         chart.market.SetScenario(t.idleDrift, t.idleVolatility, t.idleSpikeDirection,
                                  null, 0f, t.idleRandomDrift, t.idleSpikeScale);
         SetButtons(true);
-        Say(message);
+        Say(message, mood);
     }
 
     void FinishBid()
@@ -179,9 +213,16 @@ public class CakeTradeGame : MonoBehaviour
         chart.SetLimit(null);
         turn++;
 
-        string result = pnl >= 0 ? $"¡Ganaste {pnl:F0} créditos!" : $"Perdiste {-pnl:F0} créditos.";
-        if (turn >= turns.Length) { Say(result); EndByBalance(); return; }
-        EnterDeciding(result + " " + turns[turn].hint);
+        bool won = pnl >= 0;
+        string result = won ? $"¡Ganaste {pnl:F0} créditos!" : $"Uy, perdiste {-pnl:F0} créditos...";
+        if (turn >= turns.Length)
+        {
+            Say(result, won ? PetMood.Happy : PetMood.Sad);
+            EndByBalance();
+            return;
+        }
+        Turn next = turns[turn];
+        EnterDeciding(result + " " + next.hint, won ? next.hintMood : PetMood.Sad);
     }
 
     void EndByBalance()
@@ -192,6 +233,7 @@ public class CakeTradeGame : MonoBehaviour
 
         if (credits >= startCredits)
         {
+            Say("Bueno... ¡supongo que hiciste bien en parar!", PetMood.Neutral);
             string msg = turn == 0
                 ? $"No arriesgaste nada y conservaste tus {credits:F0} créditos."
                 : $"Dijiste que NO a tiempo.\nTerminaste con {credits:F0} créditos (+{diff:F0}).";
@@ -199,6 +241,7 @@ public class CakeTradeGame : MonoBehaviour
         }
         else
         {
+            Say("Ay... debimos parar antes.", PetMood.Sad);
             string msg = credits < 0
                 ? $"Terminaste debiendo {-credits:F0} créditos."
                 : $"Perdiste {-diff:F0} créditos. Te quedan {credits:F0}.";
@@ -211,9 +254,9 @@ public class CakeTradeGame : MonoBehaviour
         phase = Phase.Ended;
         credits += OpenPnL();
         SetButtons(false);
-        Say("¡Cruzaste el límite! Ya no puedes salir...");
+        Say("¡Cruzamos el límite! Ya no podemos salir...", PetMood.Sad);
         ShowEnd(catastrophePanel, catastropheText,
-            $"Ignoraste las señales y no pudiste salir.\nDeuda final: {Mathf.Abs(credits):F0} créditos.\n\n" +
+            $"Le hiciste caso a la tentación y no pudiste salir.\nDeuda final: {Mathf.Abs(credits):F0} créditos.\n\n" +
             "Decir que no a tiempo habría evitado esto.");
     }
 
@@ -261,5 +304,30 @@ public class CakeTradeGame : MonoBehaviour
     }
 
     void SetCake(Sprite s) { if (cakeImage && s) cakeImage.sprite = s; }
-    void Say(string msg) { if (messageText) messageText.text = msg; }
+
+    void SetPet(PetMood mood)
+    {
+        if (!petImage) return;
+        Sprite s = mood == PetMood.Happy ? pet2Sprite :
+                   mood == PetMood.Sad ? petMinus1Sprite : pet1Sprite;
+        if (s) petImage.sprite = s;
+    }
+
+    /// <summary>La mascota "dice" el mensaje: cambia su sprite y rebota.</summary>
+    void Say(string msg, PetMood mood)
+    {
+        if (messageText) messageText.text = msg;
+        SetPet(mood);
+        popTimer = popDuration;
+    }
+
+    void AnimatePop()
+    {
+        if (popTimer <= 0f) return;
+        popTimer = Mathf.Max(0f, popTimer - Time.deltaTime);
+        float s = 1f + popScale * Mathf.Sin(Mathf.PI * (1f - popTimer / popDuration));
+        Vector3 scale = new Vector3(s, s, 1f);
+        if (petImage) petImage.rectTransform.localScale = scale;
+        if (dialogBubble) dialogBubble.localScale = scale;
+    }
 }

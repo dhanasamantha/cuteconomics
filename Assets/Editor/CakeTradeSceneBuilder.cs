@@ -7,8 +7,16 @@ using TMPro;
 
 /// <summary>
 /// Menú: Tools > Pasteles FX > Crear escena de trading
-/// Crea Canvas, gráfica, pastel, textos, botones PUJAR / NO / REINICIAR
-/// y los 3 paneles finales, todo ya conectado.
+///
+/// Distribución:
+///  ┌──────────────┬──────────────────────────┬──────────┐
+///  │ Gráfica (1/3)│                          │ Turno    │
+///  │              │      PASTEL GRANDE       │ Créditos │
+///  ├──────────────┤        (centro)          │          │
+///  │ Globo diálogo│                          │          │
+///  │ Mascota      │                          │          │
+///  │              │  [PUJAR] [NO] [REINICIAR]│          │
+///  └──────────────┴──────────────────────────┴──────────┘
 /// Este archivo debe ir dentro de una carpeta llamada "Editor".
 /// </summary>
 public static class CakeTradeSceneBuilder
@@ -16,6 +24,8 @@ public static class CakeTradeSceneBuilder
     static readonly Color Green = new Color(0.25f, 0.65f, 0.15f);
     static readonly Color Red = new Color(0.86f, 0f, 0.1f);
     static readonly Color Gray = new Color(0.45f, 0.45f, 0.5f);
+    static readonly Color BubbleColor = new Color(1f, 0.96f, 0.82f);
+    static readonly Color Dark = new Color(0.15f, 0.15f, 0.15f);
 
     [MenuItem("Tools/Pasteles FX/Crear escena de trading")]
     static void Build()
@@ -39,26 +49,48 @@ public static class CakeTradeSceneBuilder
         }
 
         Transform root = canvasGO.transform;
-
-        // ---- HUD ----
         AddImage(Rect("Background", root, Vector2.zero, Vector2.one), Color.white);
-        Text("Title", root, new Vector2(0.03f, 0.9f), new Vector2(0.5f, 0.98f), "GBP/USD · Pasteles", 40, TextAlignmentOptions.MidlineLeft, true);
-        TMP_Text turnTxt = Text("Turn", root, new Vector2(0.5f, 0.9f), new Vector2(0.64f, 0.98f), "Turno 1/3", 34, TextAlignmentOptions.MidlineRight, true);
 
-        RectTransform chartArea = Rect("Chart", root, new Vector2(0.03f, 0.13f), new Vector2(0.64f, 0.88f));
+        // ---- Columna izquierda: gráfica arriba (1/3 del canvas) ----
+        Text("Title", root, new Vector2(0.02f, 0.93f), new Vector2(0.3f, 0.99f), "GBP/USD · Pasteles", 28, TextAlignmentOptions.MidlineLeft, true);
+
+        RectTransform chartArea = Rect("Chart", root, new Vector2(0.02f, 0.62f), new Vector2(0.28f, 0.92f));
         var chart = chartArea.gameObject.AddComponent<CandleChart>();
         chart.chartArea = chartArea;
+        chart.visibleCandles = 24;
+        chart.labelFontSize = 16f;
+        chart.gridLines = 5;
+        chart.wickWidth = 1.5f;
 
-        Image cake = AddImage(Rect("Cake", root, new Vector2(0.75f, 0.42f), new Vector2(0.97f, 0.88f)), Color.white);
+        // ---- Columna izquierda: globo de diálogo + mascota debajo de la gráfica ----
+        RectTransform bubble = Rect("DialogBubble", root, new Vector2(0.02f, 0.43f), new Vector2(0.34f, 0.58f));
+        bubble.pivot = new Vector2(0.25f, 0f); // rebota desde la mascota
+        AddImage(bubble, BubbleColor);
+        RectTransform tail = Rect("Tail", bubble, new Vector2(0.25f, 0f), new Vector2(0.25f, 0f));
+        tail.sizeDelta = new Vector2(30f, 30f);
+        tail.localEulerAngles = new Vector3(0f, 0f, 45f);
+        AddImage(tail, BubbleColor);
+        TMP_Text msg = Text("Dialog", bubble, new Vector2(0.05f, 0.08f), new Vector2(0.95f, 0.92f), "", 26, TextAlignmentOptions.MidlineLeft, false);
+        msg.enableAutoSizing = true;
+        msg.fontSizeMin = 14f;
+        msg.fontSizeMax = 28f;
+
+        Image pet = AddImage(Rect("Pet", root, new Vector2(0.03f, 0.04f), new Vector2(0.23f, 0.41f)), Color.white);
+        pet.preserveAspect = true;
+        pet.rectTransform.pivot = new Vector2(0.5f, 0f); // rebota desde los pies
+
+        // ---- Centro: pastel muy grande ----
+        Image cake = AddImage(Rect("Cake", root, new Vector2(0.34f, 0.2f), new Vector2(0.84f, 0.95f)), Color.white);
         cake.preserveAspect = true;
 
-        TMP_Text credits = Text("Credits", root, new Vector2(0.73f, 0.32f), new Vector2(0.99f, 0.4f), "Créditos: 100", 36, TextAlignmentOptions.Center, true);
+        // ---- Derecha arriba: turno y créditos ----
+        TMP_Text turnTxt = Text("Turn", root, new Vector2(0.84f, 0.88f), new Vector2(0.98f, 0.96f), "Turno 1/3", 34, TextAlignmentOptions.MidlineRight, true);
+        TMP_Text credits = Text("Credits", root, new Vector2(0.80f, 0.79f), new Vector2(0.98f, 0.87f), "Créditos: 100", 32, TextAlignmentOptions.MidlineRight, true);
 
-        Button bid = Btn("BidButton", root, new Vector2(0.73f, 0.2f), new Vector2(0.855f, 0.3f), "PUJAR", Green, 38);
-        Button no = Btn("NoButton", root, new Vector2(0.865f, 0.2f), new Vector2(0.99f, 0.3f), "NO", Red, 38);
-        Button restart = Btn("RestartButton", root, new Vector2(0.79f, 0.12f), new Vector2(0.93f, 0.18f), "REINICIAR", Gray, 26);
-
-        TMP_Text msg = Text("Message", root, new Vector2(0.03f, 0.02f), new Vector2(0.97f, 0.1f), "", 30, TextAlignmentOptions.MidlineLeft, false);
+        // ---- Abajo: los tres botones ----
+        Button bid = Btn("BidButton", root, new Vector2(0.36f, 0.03f), new Vector2(0.5f, 0.15f), "PUJAR", Green, 38);
+        Button no = Btn("NoButton", root, new Vector2(0.52f, 0.03f), new Vector2(0.66f, 0.15f), "NO", Red, 38);
+        Button restart = Btn("RestartButton", root, new Vector2(0.68f, 0.03f), new Vector2(0.82f, 0.15f), "REINICIAR", Gray, 32);
 
         // ---- Paneles finales ----
         var win = Panel(root, "WinPanel", "¡GANASTE!", new Color(0.2f, 0.6f, 0.2f));
@@ -75,6 +107,8 @@ public static class CakeTradeSceneBuilder
         game.restartButton = restart;
         game.panelRestartButtons = new[] { win.button, debt.button, cat.button };
         game.cakeImage = cake;
+        game.petImage = pet;
+        game.dialogBubble = bubble;
         game.creditsText = credits;
         game.turnText = turnTxt;
         game.messageText = msg;
@@ -87,7 +121,7 @@ public static class CakeTradeSceneBuilder
         cat.panel.SetActive(false);
 
         Selection.activeGameObject = managerGO;
-        Debug.Log("Escena creada. Asigna Pastel 1, Pastel 2 y Pastel -1 en GameManager.");
+        Debug.Log("Escena creada. Asigna los sprites del pastel y de la mascota en GameManager.");
     }
 
     struct PanelRefs { public GameObject panel; public TMP_Text body; public Button button; }
@@ -95,7 +129,7 @@ public static class CakeTradeSceneBuilder
     static PanelRefs Panel(Transform root, string name, string title, Color color)
     {
         RectTransform overlay = Rect(name, root, Vector2.zero, Vector2.one);
-        AddImage(overlay, new Color(0f, 0f, 0f, 0.6f)); // bloquea clics detrás
+        AddImage(overlay, new Color(0f, 0f, 0f, 0.6f)).raycastTarget = true; // bloquea clics detrás
 
         RectTransform card = Rect("Card", overlay, new Vector2(0.25f, 0.2f), new Vector2(0.75f, 0.8f));
         AddImage(card, color);
@@ -123,6 +157,7 @@ public static class CakeTradeSceneBuilder
     {
         var img = rt.gameObject.AddComponent<Image>();
         img.color = c;
+        img.raycastTarget = false;
         return img;
     }
 
@@ -131,7 +166,7 @@ public static class CakeTradeSceneBuilder
         RectTransform rt = Rect(name, parent, aMin, aMax);
         var t = rt.gameObject.AddComponent<TextMeshProUGUI>();
         t.text = txt; t.fontSize = size; t.alignment = align;
-        t.color = new Color(0.15f, 0.15f, 0.15f);
+        t.color = Dark;
         t.fontStyle = bold ? FontStyles.Bold : FontStyles.Normal;
         t.raycastTarget = false;
         return t;
@@ -140,8 +175,10 @@ public static class CakeTradeSceneBuilder
     static Button Btn(string name, Transform parent, Vector2 aMin, Vector2 aMax, string label, Color color, float fontSize)
     {
         RectTransform rt = Rect(name, parent, aMin, aMax);
-        AddImage(rt, color);
+        Image img = AddImage(rt, color);
+        img.raycastTarget = true; // los botones sí reciben clics
         var b = rt.gameObject.AddComponent<Button>();
+        b.targetGraphic = img;
         TMP_Text t = Text("Label", rt, Vector2.zero, Vector2.one, label, fontSize, TextAlignmentOptions.Center, true);
         t.color = Color.white;
         return b;
