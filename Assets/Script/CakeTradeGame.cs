@@ -11,6 +11,9 @@ using Random = UnityEngine.Random;
 /// "Aprender a decir que no" — trading de pasteles en 3 turnos.
 /// La mascota es la voz que te incentiva a pujar: sus diálogos aparecen en el globo
 /// y su sprite cambia según el ánimo de cada mensaje.
+/// El pastel tiene 3 niveles: sube de nivel si pujas a la alza, baja si pujas a la baja,
+/// y se pudre si llegas a la catástrofe.
+/// Cada turno tiene su propio audio clip (clips[0], clips[1], clips[2]).
 /// </summary>
 public class CakeTradeGame : MonoBehaviour
 {
@@ -23,6 +26,8 @@ public class CakeTradeGame : MonoBehaviour
         [TextArea] public string hint;
         [Tooltip("Ánimo de la mascota mientras dice el hint.")]
         public PetMood hintMood = PetMood.Happy;
+
+        [Header("Mercado mientras decides")]
         [Tooltip("Tendencia mientras decides (puntos por tick). Positivo = se ve prometedor.")]
         public float idleDrift = 0.06f;
         public float idleVolatility = 1f;
@@ -32,6 +37,8 @@ public class CakeTradeGame : MonoBehaviour
         public float idleSpikeScale = 1f;
         [Tooltip("Cuánto pesan los cambios de humor aleatorios (0 = estable, 1 = caótico).")]
         [Range(0f, 1f)] public float idleRandomDrift = 0.3f;
+
+        [Header("Resultado de la puja")]
         [Tooltip("Resultado de la puja en créditos (mínimo, máximo).")]
         public Vector2 outcome = new Vector2(20f, 40f);
         public float resolveVolatility = 1f;
@@ -65,12 +72,13 @@ public class CakeTradeGame : MonoBehaviour
     public TMP_Text debtText;
     public GameObject catastrophePanel;
     public TMP_Text catastropheText;
-    public float endPanelDelay = 1.5f;
+    public float endPanelDelay = 3f;
 
     [Header("Sprites del pastel")]
-    public Sprite cake1Sprite;       // inicial
-    public Sprite cake2Sprite;       // pujaste a la alza
-    public Sprite cakeMinus1Sprite;  // pujaste a la baja
+    [Tooltip("Niveles del pastel creciendo: Element 0 = nivel 1 (inicial), 1 = nivel 2, 2 = nivel 3.")]
+    public Sprite[] cakeLevelSprites = new Sprite[3];
+    [Tooltip("Pastel podrido / destruido: aparece en el final catastrófico.")]
+    public Sprite cakeRottenSprite;
 
     [Header("Sprites de la mascota")]
     public Sprite pet1Sprite;        // neutral
@@ -78,9 +86,20 @@ public class CakeTradeGame : MonoBehaviour
     [FormerlySerializedAs("petinus1Sprite")]
     public Sprite petMinus1Sprite;   // triste / preocupada
 
-    [Header("Animación de la mascota")]
+    [Header("Sonido")]
+    [Tooltip("Un clip por turno: Element 0 = turno 1, Element 1 = turno 2, Element 2 = turno 3.")]
+    public AudioClip[] clips = new AudioClip[3];
+    [Tooltip("Si está activo, el clip se repite mientras dure el turno (útil para música).")]
+    public bool loopClips;
+    [Tooltip("AudioSource que reproduce los clips. Si se deja vacío se crea uno solo.")]
+    [FormerlySerializedAs("sorce")]
+    public AudioSource audioSource;
+
+    [Header("Animación")]
     public float popDuration = 0.25f;
     public float popScale = 0.12f;
+    [Tooltip("Rebote del pastel cuando cambia de nivel.")]
+    public float cakePopScale = 0.08f;
 
     [Header("Reglas")]
     public float startCredits = 100f;
@@ -124,10 +143,14 @@ public class CakeTradeGame : MonoBehaviour
 
     Phase phase;
     int turn;
-    float credits, entry, resolveTimer, popTimer;
+    int cakeLevel;   // 0 = nivel 1, 1 = nivel 2, 2 = nivel 3
+    float credits, entry, resolveTimer, popTimer, cakePopTimer;
 
     void Start()
     {
+        if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
+        audioSource.playOnAwake = false;
+
         credits = startCredits;
         bidButton.onClick.AddListener(Bid);
         noButton.onClick.AddListener(SayNo);
@@ -137,7 +160,8 @@ public class CakeTradeGame : MonoBehaviour
 
         HidePanels();
         chart.SetLimit(null);
-        SetCake(cake1Sprite);
+        cakeLevel = 0;
+        ShowCakeLevel();
         EnterDeciding(turns[0].hint, turns[0].hintMood);
     }
 
@@ -161,9 +185,9 @@ public class CakeTradeGame : MonoBehaviour
     {
         if (phase != Phase.Deciding || turn >= turns.Length) return;
 
-        // El pastel cambia según la dirección de la gráfica al momento de pujar
+        // Pujar a la alza sube un nivel el pastel; pujar a la baja lo regresa al nivel anterior
         bool rising = chart.IsRising;
-        SetCake(rising ? cake2Sprite : cakeMinus1Sprite);
+        ChangeCakeLevel(rising ? 1 : -1);
 
         Turn t = turns[turn];
         entry = chart.CurrentPrice;
@@ -175,7 +199,7 @@ public class CakeTradeGame : MonoBehaviour
         phase = Phase.Resolving;
         resolveTimer = 0f;
         SetButtons(false);
-        if (rising) Say("¡Eso! ¡Va para arriba, vamos a ganar!", PetMood.Happy);
+        if (rising) Say("¡Eso! ¡Va para arriba, el pastel está creciendo!", PetMood.Happy);
         else Say("Mmm... va bajando, pero seguro rebota.", PetMood.Sad);
     }
 
@@ -193,9 +217,10 @@ public class CakeTradeGame : MonoBehaviour
     {
         phase = Phase.Deciding;
         Turn t = turns[turn];
-        // La gráfica nunca se detiene: solo cambia su "personalidad" según el turno
+
         chart.market.SetScenario(t.idleDrift, t.idleVolatility, t.idleSpikeDirection,
                                  null, 0f, t.idleRandomDrift, t.idleSpikeScale);
+        PlayTurnClip(turn);
         SetButtons(true);
         Say(message, mood);
     }
@@ -254,7 +279,8 @@ public class CakeTradeGame : MonoBehaviour
         phase = Phase.Ended;
         credits += OpenPnL();
         SetButtons(false);
-        Say("¡Cruzamos el límite! Ya no podemos salir...", PetMood.Sad);
+        RotCake(); // en el último turno todo se fue a la baja: el pastel se pudre
+        Say("¡Cruzamos el límite! El pastel se pudrió...", PetMood.Sad);
         ShowEnd(catastrophePanel, catastropheText,
             $"Le hiciste caso a la tentación y no pudiste salir.\nDeuda final: {Mathf.Abs(credits):F0} créditos.\n\n" +
             "Decir que no a tiempo habría evitado esto.");
@@ -272,6 +298,43 @@ public class CakeTradeGame : MonoBehaviour
         chart.Running = false;
         if (restartButton) restartButton.gameObject.SetActive(false);
         if (panel) panel.SetActive(true);
+    }
+
+    // Pastel
+
+    /// <summary>+1 sube un nivel, -1 regresa al nivel anterior. Se queda entre nivel 1 y nivel 3.</summary>
+    void ChangeCakeLevel(int delta)
+    {
+        int max = (cakeLevelSprites != null && cakeLevelSprites.Length > 0) ? cakeLevelSprites.Length - 1 : 0;
+        cakeLevel = Mathf.Clamp(cakeLevel + delta, 0, max);
+        ShowCakeLevel();
+    }
+
+    void ShowCakeLevel()
+    {
+        if (cakeLevelSprites == null || cakeLevelSprites.Length == 0) return;
+        SetCake(cakeLevelSprites[Mathf.Clamp(cakeLevel, 0, cakeLevelSprites.Length - 1)]);
+    }
+
+    void RotCake() => SetCake(cakeRottenSprite);
+
+    void SetCake(Sprite s)
+    {
+        if (cakeImage && s) cakeImage.sprite = s;
+        cakePopTimer = popDuration;
+    }
+
+    // Audio
+
+    void PlayTurnClip(int index)
+    {
+        if (audioSource == null || clips == null || index < 0 || index >= clips.Length) return;
+        AudioClip c = clips[index];
+        if (c == null) return;
+        audioSource.Stop();
+        audioSource.clip = c;
+        audioSource.loop = loopClips;
+        audioSource.Play();
     }
 
     // UI
@@ -303,8 +366,6 @@ public class CakeTradeGame : MonoBehaviour
         if (catastrophePanel) catastrophePanel.SetActive(false);
     }
 
-    void SetCake(Sprite s) { if (cakeImage && s) cakeImage.sprite = s; }
-
     void SetPet(PetMood mood)
     {
         if (!petImage) return;
@@ -323,11 +384,19 @@ public class CakeTradeGame : MonoBehaviour
 
     void AnimatePop()
     {
-        if (popTimer <= 0f) return;
-        popTimer = Mathf.Max(0f, popTimer - Time.deltaTime);
-        float s = 1f + popScale * Mathf.Sin(Mathf.PI * (1f - popTimer / popDuration));
-        Vector3 scale = new Vector3(s, s, 1f);
-        if (petImage) petImage.rectTransform.localScale = scale;
-        if (dialogBubble) dialogBubble.localScale = scale;
+        if (popTimer > 0f)
+        {
+            popTimer = Mathf.Max(0f, popTimer - Time.deltaTime);
+            float s = 1f + popScale * Mathf.Sin(Mathf.PI * (1f - popTimer / popDuration));
+            Vector3 scale = new Vector3(s, s, 1f);
+            if (petImage) petImage.rectTransform.localScale = scale;
+            if (dialogBubble) dialogBubble.localScale = scale;
+        }
+        if (cakePopTimer > 0f)
+        {
+            cakePopTimer = Mathf.Max(0f, cakePopTimer - Time.deltaTime);
+            float s = 1f + cakePopScale * Mathf.Sin(Mathf.PI * (1f - cakePopTimer / popDuration));
+            if (cakeImage) cakeImage.rectTransform.localScale = new Vector3(s, s, 1f);
+        }
     }
 }
